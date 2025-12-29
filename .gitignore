@@ -1,0 +1,38 @@
+# Ignore node_modules in all subdirectories
+**/node_modules/
+
+# Ignore vendor in all subdirectories
+**/vendor/
+
+# Environment files
+**/.env
+!**/.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+**/storage/logs/*
+!**/storage/logs/.gitignore
+
+# Build outputs
+**/dist/
+**/build/
+
+# Laravel specific
+**/bootstrap/cache/*
+!**/bootstrap/cache/.gitignore
+**/storage/framework/cache/*
+**/storage/framework/sessions/*
+**/storage/framework/views/*
+
+# Database
+**/database/database.sqlite
