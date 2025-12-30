@@ -1,358 +1,361 @@
-# Architecture Overview
+# Architecture Documentation
 
-System architecture and design decisions for the Full Stack Web Developer Assignment project.
+## System Architecture
 
-## Table of Contents
+![System Architecture](images/architecture.png)
 
-- [System Overview](#system-overview)
-- [Monorepo Structure](#monorepo-structure)
-- [Backend Architecture](#backend-architecture)
-- [Frontend Architecture](#frontend-architecture)
-- [Data Flow](#data-flow)
-- [Design Decisions](#design-decisions)
+## Overview
 
-## System Overview
+The BeyondChats Full Stack Application follows a modern monorepo architecture with clear separation of concerns across three main components: Frontend, Backend, and Automation.
 
-This project follows a **monorepo architecture** with clear separation between frontend and backend applications. The system is designed to be:
+---
 
-- **Scalable**: Easy to add new features and services
-- **Maintainable**: Clear structure and separation of concerns
-- **Testable**: Comprehensive test coverage
-- **Deployable**: Ready for modern deployment platforms
+## Architecture Layers
 
-### High-Level Architecture
+### 1. Frontend Layer (React + Vite)
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Monorepo Root                        │
-│                                                          │
-│  ┌──────────────────┐         ┌──────────────────┐     │
-│  │                  │         │                  │     │
-│  │    Frontend      │ ◄─────► │     Backend      │     │
-│  │   (Coming Soon)  │  HTTP   │    (Laravel)     │     │
-│  │                  │  REST   │                  │     │
-│  └──────────────────┘         └──────────────────┘     │
-│                                        │                │
-│                                        ▼                │
-│                                ┌──────────────┐         │
-│                                │   Database   │         │
-│                                │   (SQLite)   │         │
-│                                └──────────────┘         │
-└─────────────────────────────────────────────────────────┘
-```
+**Technology**: React 18, Vite, React Router DOM
 
-## Monorepo Structure
+**Components**:
+- `ArticleList` - Displays paginated list of articles with filtering
+- `ArticleDetail` - Shows individual article with metadata
+- `ComparisonView` - Side-by-side original vs enhanced content
 
-### Why Monorepo?
+**Communication**:
+- Makes HTTP requests to Backend API via Axios
+- Handles loading states and error boundaries
+- Implements client-side routing
 
-We chose a monorepo structure for several reasons:
+**Deployment**: Vercel (Global CDN)
 
-1. **Unified Versioning**: Frontend and backend versions stay in sync
-2. **Shared Dependencies**: Common tools and configurations
-3. **Easier Refactoring**: Changes across both apps in single PR
-4. **Simplified CI/CD**: Single pipeline for entire stack
-5. **Better Developer Experience**: One clone, one setup
+---
 
-### Directory Structure
+### 2. Backend Layer (Laravel)
 
-```
-fullstack-web-developer-assignment/
-├── backend/                    # Laravel API application
-│   ├── app/
-│   │   ├── Http/
-│   │   │   ├── Controllers/   # API controllers
-│   │   │   ├── Middleware/    # Custom middleware
-│   │   │   └── Requests/      # Form requests
-│   │   ├── Models/            # Eloquent models
-│   │   └── Services/          # Business logic
-│   ├── config/                # Configuration files
-│   ├── database/
-│   │   ├── migrations/        # Database migrations
-│   │   ├── seeders/           # Database seeders
-│   │   └── factories/         # Model factories
-│   ├── routes/
-│   │   ├── api.php           # API routes
-│   │   └── web.php           # Web routes
-│   ├── tests/
-│   │   ├── Feature/          # Feature tests
-│   │   └── Unit/             # Unit tests
-│   └── ...
-│
-├── frontend/                  # Frontend application (TBD)
-│   └── .gitkeep
-│
-├── docs/                      # Project documentation
-│   ├── SETUP.md              # Setup instructions
-│   ├── ARCHITECTURE.md       # This file
-│   └── API.md                # API documentation
-│
-├── .gitignore                # Root gitignore
-├── package.json              # Workspace configuration
-└── README.md                 # Project overview
-```
+**Technology**: Laravel 12, PHP 8.2, SQLite/MySQL
 
-## Backend Architecture
+**Components**:
 
-### Technology Stack
+#### API Layer
+- `ArticleController` - Handles CRUD operations
+- `API Routes` - RESTful endpoint definitions
+- `ArticleResource` - JSON response transformation
+- `ArticleCollection` - Paginated response formatting
 
-- **Framework**: Laravel 12.x
-- **Language**: PHP 8.2+
-- **Database**: SQLite (dev) / MySQL (prod)
-- **Testing**: PHPUnit
-- **Code Style**: Laravel Pint
+#### Business Logic
+- `BeyondChatsScraper` - Scrapes blog articles
+- `Article Model` - Eloquent ORM model
+- `Validation Requests` - Input validation
 
-### Architectural Patterns
+#### Data Layer
+- SQLite Database (development)
+- MySQL Database (production)
+- Migrations & Factories
 
-#### MVC Pattern
+**Deployment**: Render (Free tier)
 
-Laravel follows the Model-View-Controller pattern:
+---
 
-- **Models**: Data layer (Eloquent ORM)
-- **Views**: Blade templates (for web routes)
-- **Controllers**: Request handling and response
+### 3. Automation Layer (NodeJS)
 
-#### Service Layer Pattern
+**Technology**: Node.js 18, ES Modules
 
-For complex business logic, we use service classes:
+**Pipeline Components**:
+
+1. **GoogleSearcher**
+   - Searches Google for article titles
+   - Extracts top 2 ranking URLs
+   - Filters relevant article links
+
+2. **ContentExtractor**
+   - Scrapes content from URLs
+   - Parses HTML with Cheerio
+   - Extracts title, content, metadata
+
+3. **ArticleEnhancer**
+   - Integrates with Google Gemini LLM
+   - Enhances content quality
+   - Generates improved versions
+
+4. **CitationFormatter**
+   - Formats citations (Markdown, HTML, JSON)
+   - Generates reference links
+   - Appends to enhanced content
+
+5. **Enhancement Pipeline**
+   - Orchestrates all modules
+   - Manages workflow
+   - Updates via API
+
+**External Services**:
+- Google Search (for article discovery)
+- Google Gemini AI (for enhancement)
+- BeyondChats Blog (source content)
+
+---
+
+## Data Flow
+
+### Article Creation Flow
 
 ```
-Request → Controller → Service → Model → Database
-                ↓
-            Response
+1. User runs scraper command
+   ↓
+2. BeyondChatsScraper fetches BeyondChats blog
+   ↓
+3. Parses HTML to extract articles
+   ↓
+4. Stores in database via Article Model
+   ↓
+5. Articles available via API
 ```
 
-#### Repository Pattern (Optional)
-
-For data abstraction, repositories can be added:
+### Enhancement Flow
 
 ```
-Controller → Service → Repository → Model
+1. User runs enhancement script
+   ↓
+2. Fetch non-enhanced articles from API
+   ↓
+3. For each article:
+   a. Search Google for title
+   b. Extract content from top 2 results
+   c. Send to Gemini LLM for enhancement
+   d. Format citations
+   e. Update article via API
+   ↓
+4. Enhanced articles available in frontend
 ```
 
-### API Design
+### User View Flow
 
-#### RESTful Principles
+```
+1. User visits frontend (Vercel)
+   ↓
+2. React app loads ArticleList
+   ↓
+3. Fetch articles from Backend API (Render)
+   ↓
+4. Display with pagination and filters
+   ↓
+5. User clicks article
+   ↓
+6. Navigate to ArticleDetail
+   ↓
+7. User can toggle between:
+   - Original content
+   - Enhanced content
+   - Comparison view
+```
 
-- **Resource-based URLs**: `/api/users`, `/api/posts`
-- **HTTP Methods**: GET, POST, PUT, PATCH, DELETE
-- **Status Codes**: Proper HTTP status codes
-- **JSON Responses**: Consistent response format
+---
 
-#### Response Format
+## Database Schema
+
+### Articles Table
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | bigint | Primary key |
+| title | string | Article title |
+| slug | string | URL-friendly identifier (unique) |
+| url | string | Original article URL (unique) |
+| excerpt | text | Short summary |
+| content | longtext | Original content |
+| enhanced_content | longtext | AI-enhanced content |
+| author | string | Article author |
+| image_url | string | Featured image |
+| published_at | datetime | Publication date |
+| metadata | json | Additional info (read_time, views, category) |
+| citations | json | Reference URLs |
+| is_enhanced | boolean | Enhancement status |
+| created_at | timestamp | Record creation |
+| updated_at | timestamp | Last update |
+
+**Indexes**:
+- `slug` (unique)
+- `url` (unique)
+- `published_at`
+- `is_enhanced`
+
+---
+
+## API Design
+
+### RESTful Principles
+
+- **Resources**: Articles
+- **HTTP Methods**: GET, POST, PUT, DELETE
+- **Response Format**: JSON
+- **Status Codes**: 200, 201, 404, 422, 500
+
+### Endpoint Structure
+
+```
+GET    /api/articles           - List all articles
+POST   /api/articles           - Create article
+GET    /api/articles/{slug}    - Get single article
+PUT    /api/articles/{slug}    - Update article
+DELETE /api/articles/{slug}    - Delete article
+GET    /api/articles/{slug}/enhanced - Get enhanced version
+```
+
+### Response Format
 
 ```json
 {
   "success": true,
   "data": { ... },
-  "message": "Operation successful",
   "meta": {
-    "timestamp": "2025-12-29T08:00:00Z"
+    "current_page": 1,
+    "total_pages": 5,
+    "per_page": 15,
+    "total": 72
+  },
+  "links": {
+    "first": "...",
+    "last": "...",
+    "prev": null,
+    "next": "..."
   }
 }
 ```
 
-### Database Design
-
-#### Migration Strategy
-
-- **Version Control**: All schema changes via migrations
-- **Rollback Support**: Down methods for all migrations
-- **Seeders**: Sample data for development
-
-#### Naming Conventions
-
-- **Tables**: Plural, snake_case (e.g., `user_profiles`)
-- **Columns**: snake_case (e.g., `created_at`)
-- **Foreign Keys**: `{table}_id` (e.g., `user_id`)
-
-## Frontend Architecture
-
-> **Status**: To be implemented in upcoming sessions
-
-### Planned Architecture
-
-- **Framework**: React/Vue/Next.js (TBD)
-- **State Management**: Redux/Vuex/Context API
-- **Styling**: Tailwind CSS / CSS Modules
-- **API Client**: Axios / Fetch API
-- **Routing**: React Router / Vue Router
-
-### Component Structure (Planned)
-
-```
-frontend/
-├── src/
-│   ├── components/       # Reusable components
-│   ├── pages/           # Page components
-│   ├── services/        # API services
-│   ├── store/           # State management
-│   ├── utils/           # Utility functions
-│   └── App.jsx          # Root component
-└── public/              # Static assets
-```
-
-## Data Flow
-
-### Request Flow
-
-```
-1. Client Request
-   ↓
-2. Frontend (HTTP Request)
-   ↓
-3. Backend API (Laravel)
-   ↓
-4. Middleware (Auth, CORS, etc.)
-   ↓
-5. Controller
-   ↓
-6. Service Layer (Business Logic)
-   ↓
-7. Model (Database Query)
-   ↓
-8. Database
-   ↓
-9. Response (JSON)
-   ↓
-10. Frontend (Update UI)
-```
-
-### Authentication Flow (Planned)
-
-```
-1. User Login Request
-   ↓
-2. Backend Validates Credentials
-   ↓
-3. Generate JWT/Session Token
-   ↓
-4. Return Token to Frontend
-   ↓
-5. Frontend Stores Token
-   ↓
-6. Subsequent Requests Include Token
-   ↓
-7. Backend Validates Token
-   ↓
-8. Process Request
-```
-
-## Design Decisions
-
-### 1. Monorepo vs Polyrepo
-
-**Decision**: Monorepo
-
-**Rationale**:
-- Simpler for assignment project
-- Easier to maintain consistency
-- Single source of truth
-- Simplified deployment
-
-### 2. SQLite vs MySQL
-
-**Decision**: SQLite for development, MySQL for production
-
-**Rationale**:
-- SQLite: Zero configuration, perfect for development
-- MySQL: Better performance and features for production
-- Easy to switch via Laravel's database abstraction
-
-### 3. API-First Approach
-
-**Decision**: Build backend API first, then frontend
-
-**Rationale**:
-- Clear separation of concerns
-- Frontend flexibility (can change framework)
-- Easier to test backend independently
-- Supports multiple clients (web, mobile)
-
-### 4. Laravel 12.x
-
-**Decision**: Use latest Laravel version
-
-**Rationale**:
-- Modern PHP features
-- Best practices built-in
-- Strong ecosystem
-- Excellent documentation
-
-### 5. Testing Strategy
-
-**Decision**: Feature tests + Unit tests
-
-**Rationale**:
-- Feature tests: End-to-end API testing
-- Unit tests: Business logic validation
-- High confidence in deployments
+---
 
 ## Security Considerations
 
-### Backend Security
-
-- **CSRF Protection**: Built-in Laravel CSRF
-- **SQL Injection**: Eloquent ORM prevents SQL injection
-- **XSS Protection**: Output escaping
-- **Authentication**: Laravel Sanctum/Passport
-- **Rate Limiting**: API throttling
-
-### Frontend Security (Planned)
-
-- **XSS Prevention**: React/Vue auto-escaping
-- **HTTPS Only**: Production deployment
-- **Secure Storage**: HttpOnly cookies for tokens
-- **Input Validation**: Client-side + server-side
-
-## Performance Optimization
-
 ### Backend
+- ✅ CORS configuration for allowed origins
+- ✅ Input validation on all requests
+- ✅ SQL injection prevention (Eloquent ORM)
+- ✅ XSS protection (output escaping)
+- ✅ Environment variable management
 
-- **Query Optimization**: Eager loading, indexing
-- **Caching**: Redis for frequently accessed data
-- **Queue Jobs**: Async processing for heavy tasks
-- **Database Indexing**: Strategic index placement
+### Frontend
+- ✅ HTTPS enforcement in production
+- ✅ Client-side input validation
+- ✅ Error boundary implementation
+- ✅ Secure API communication
 
-### Frontend (Planned)
-
-- **Code Splitting**: Lazy loading routes
-- **Asset Optimization**: Minification, compression
-- **CDN**: Static asset delivery
-- **Caching**: Browser caching strategies
-
-## Deployment Architecture
-
-### Development
-
-```
-Local Machine
-├── Backend: http://localhost:8000
-└── Frontend: http://localhost:3000 (planned)
-```
-
-### Production (Planned)
-
-```
-Cloud Platform (Vercel/AWS/DigitalOcean)
-├── Frontend: https://app.example.com
-├── Backend API: https://api.example.com
-└── Database: Managed MySQL/PostgreSQL
-```
-
-## Future Enhancements
-
-- [ ] Implement frontend application
-- [ ] Add authentication system
-- [ ] Implement real-time features (WebSockets)
-- [ ] Add file upload functionality
-- [ ] Implement caching layer
-- [ ] Add API documentation (Swagger/OpenAPI)
-- [ ] Set up CI/CD pipeline
-- [ ] Add monitoring and logging
-- [ ] Implement rate limiting
-- [ ] Add email notifications
+### Deployment
+- ✅ Environment-specific configurations
+- ✅ Secrets management (env variables)
+- ✅ Automatic HTTPS (Vercel + Render)
 
 ---
 
-**Last Updated**: 2025-12-29
-**Version**: 1.0.0
+## Scalability
+
+### Current Architecture
+- **Database**: SQLite (development), MySQL (production ready)
+- **Backend**: Single instance (Render free tier)
+- **Frontend**: Global CDN (Vercel)
+- **Caching**: Browser caching, asset optimization
+
+### Future Improvements
+- Redis caching for API responses
+- Database connection pooling
+- Queue system for background jobs
+- CDN for media assets
+- Horizontal scaling for backend
+
+---
+
+## Monitoring & Logging
+
+### Backend (Render)
+- Application logs
+- Error tracking
+- Performance metrics
+- Uptime monitoring
+
+### Frontend (Vercel)
+- Deployment logs
+- Analytics dashboard
+- Core Web Vitals
+- Error reporting
+
+### Automation
+- Console logging
+- Pipeline status tracking
+- Error notifications
+
+---
+
+## Technology Choices
+
+### Why Laravel?
+- Modern PHP framework with best practices
+- Eloquent ORM for database operations
+- Built-in API resources
+- Excellent testing support
+
+### Why React + Vite?
+- Fast development with Hot Module Replacement
+- Modern build tool with great performance
+- Component-based architecture
+- Rich ecosystem
+
+### Why NodeJS for Automation?
+- Async I/O for web scraping
+- Great library ecosystem (Axios, Cheerio)
+- Easy integration with LLM APIs
+- JavaScript uniformity with frontend
+
+### Why Render + Vercel?
+- Free tier for development/portfolio
+- Automatic deployments from Git
+- Built-in HTTPS
+- Easy environment management
+
+---
+
+## Deployment Architecture
+
+```
+GitHub Repository
+       ↓
+   ┌───┴───┐
+   ↓       ↓
+Render   Vercel
+(Backend)(Frontend)
+   ↓       ↓
+Production URLs
+```
+
+**Auto-deployment**: Push to `main` branch triggers deployment on both platforms
+
+---
+
+## Development Workflow
+
+1. **Local Development**
+   - Backend: `php artisan serve` (port 8000)
+   - Frontend: `npm run dev` (port 5173)
+   - Automation: `npm start`
+
+2. **Testing**
+   - Backend: `php artisan test`
+   - Integration: Manual testing
+
+3. **Deployment**
+   - Commit to `main` branch
+   - Automatic deployment to Render + Vercel
+   - Verify both environments
+
+---
+
+## Conclusion
+
+This architecture provides:
+- ✅ Clear separation of concerns
+- ✅ Scalable foundation
+- ✅ Modern development practices
+- ✅ Production-ready deployment
+- ✅ Easy maintenance and updates
+
+For more details, see:
+- [API Documentation](API.md)
+- [Setup Guide](SETUP.md)
+- [Deployment Guide](../DEPLOYMENT.md)
