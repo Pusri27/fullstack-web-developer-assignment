@@ -106,11 +106,12 @@ function ArticleList() {
             ) : (
                 <>
                     <div className="articles-grid">
-                        {articles.map((article) => (
+                        {articles.map((article, index) => (
                             <Link
                                 key={article.id}
                                 to={`/article/${article.slug}`}
                                 className="article-card"
+                                style={{ '--index': index }}
                             >
                                 {article.image_url && (
                                     <div className="article-image">
