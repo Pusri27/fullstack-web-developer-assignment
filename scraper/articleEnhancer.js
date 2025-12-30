@@ -1,26 +1,27 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import axios from 'axios';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 /**
- * Article Enhancer using Google Gemini LLM
+ * Article Enhancer using OpenRouter API
  * Enhances articles based on top-ranking content
+ * Supports multiple LLM models via OpenRouter
  */
 class ArticleEnhancer {
-    constructor(apiKey) {
-        this.apiKey = apiKey || process.env.GEMINI_API_KEY;
+    constructor(apiKey, model) {
+        this.apiKey = apiKey || process.env.OPENROUTER_API_KEY;
+        this.model = model || process.env.OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free';
 
         if (!this.apiKey) {
-            throw new Error('GEMINI_API_KEY is required');
+            throw new Error('OPENROUTER_API_KEY is required');
         }
 
-        this.genAI = new GoogleGenerativeAI(this.apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+        this.apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
     }
 
     /**
-     * Enhance article content using LLM
+     * Enhance article content using LLM via OpenRouter
      * @param {Object} originalArticle - Original article object
      * @param {Array} topRankingArticles - Array of top-ranking article contents
      * @returns {Promise<Object>} Enhanced article with citations
@@ -28,6 +29,7 @@ class ArticleEnhancer {
     async enhance(originalArticle, topRankingArticles) {
         try {
             console.log(`🤖 Enhancing article: "${originalArticle.title}"`);
+            console.log(`📡 Using model: ${this.model}`);
 
             // Build context from top-ranking articles
             const context = this.buildContext(topRankingArticles);
@@ -39,12 +41,34 @@ class ArticleEnhancer {
                 context
             );
 
-            // Generate enhanced content
-            const result = await this.model.generateContent(prompt);
-            const response = await result.response;
-            const enhancedContent = response.text();
+            // Call OpenRouter API
+            const response = await axios.post(
+                this.apiUrl,
+                {
+                    model: this.model,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 4000
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${this.apiKey}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': 'https://github.com/Pusri27/fullstack-web-developer-assignment',
+                        'X-Title': 'BeyondChats Article Enhancer'
+                    }
+                }
+            );
+
+            const enhancedContent = response.data.choices[0].message.content;
 
             console.log(`✅ Enhanced content generated (${enhancedContent.length} chars)`);
+            console.log(`💰 Tokens used: ${response.data.usage?.total_tokens || 'N/A'}`);
 
             return {
                 enhancedContent,
@@ -54,6 +78,9 @@ class ArticleEnhancer {
 
         } catch (error) {
             console.error('❌ Enhancement failed:', error.message);
+            if (error.response) {
+                console.error('API Error:', error.response.data);
+            }
             throw error;
         }
     }
@@ -156,22 +183,47 @@ Provide ONLY the enhanced article content without any preamble or explanation.`;
     }
 
     /**
-     * Test LLM connection
+     * Test OpenRouter API connection
      * @returns {Promise<boolean>} True if connection successful
      */
     async testConnection() {
         try {
-            console.log('🔌 Testing Gemini LLM connection...');
+            console.log('🔌 Testing OpenRouter API connection...');
+            console.log(`📡 Model: ${this.model}`);
 
-            const result = await this.model.generateContent('Say "Hello, I am working!"');
-            const response = await result.response;
-            const text = response.text();
+            const response = await axios.post(
+                this.apiUrl,
+                {
+                    model: this.model,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: 'Say "Hello, I am working!"'
+                        }
+                    ],
+                    max_tokens: 50
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${this.apiKey}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': 'https://github.com/Pusri27/fullstack-web-developer-assignment',
+                        'X-Title': 'BeyondChats Article Enhancer'
+                    }
+                }
+            );
 
-            console.log('✅ LLM connection successful:', text);
+            const text = response.data.choices[0].message.content;
+
+            console.log('✅ OpenRouter API connection successful:', text);
+            console.log(`💰 Tokens used: ${response.data.usage?.total_tokens || 'N/A'}`);
             return true;
 
         } catch (error) {
-            console.error('❌ LLM connection failed:', error.message);
+            console.error('❌ OpenRouter API connection failed:', error.message);
+            if (error.response) {
+                console.error('API Error:', error.response.data);
+            }
             return false;
         }
     }
