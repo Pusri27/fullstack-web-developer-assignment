@@ -1,0 +1,51 @@
+{
+    "name": "fullstack-web-developer-assignment",
+    "version": "1.0.0",
+    "description": "Full Stack Web Developer Assignment - Monorepo with Laravel backend and modern frontend",
+    "private": true,
+    "workspaces": [
+        "backend",
+        "frontend"
+    ],
+    "scripts": {
+        "dev": "concurrently -c \"#93c5fd,#c4b5fd\" \"npm run backend\" \"npm run frontend\" --names=backend,frontend --kill-others",
+        "backend": "cd backend && composer run dev",
+        "frontend": "echo 'Frontend not yet implemented. Coming in next session.'",
+        "backend:install": "cd backend && composer install && npm install",
+        "frontend:install": "echo 'Frontend not yet implemented.'",
+        "install:all": "npm install && npm run backend:install && npm run frontend:install",
+        "test": "npm run test:backend",
+        "test:backend": "cd backend && composer test",
+        "lint": "npm run lint:backend",
+        "lint:backend": "cd backend && composer run pint",
+        "clean": "npm run clean:backend && npm run clean:frontend",
+        "clean:backend": "cd backend && rm -rf vendor node_modules",
+        "clean:frontend": "echo 'Frontend not yet implemented.'"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Pusri27/fullstack-web-developer-assignment.git"
+    },
+    "keywords": [
+        "fullstack",
+        "laravel",
+        "php",
+        "web-development",
+        "monorepo",
+        "rest-api",
+        "assignment"
+    ],
+    "author": "Pusri",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/Pusri27/fullstack-web-developer-assignment/issues"
+    },
+    "homepage": "https://github.com/Pusri27/fullstack-web-developer-assignment#readme",
+    "devDependencies": {
+        "concurrently": "^9.1.0"
+    },
+    "engines": {
+        "node": ">=18.0.0",
+        "npm": ">=9.0.0"
+    }
+}
